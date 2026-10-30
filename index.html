@@ -1,0 +1,1305 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MatriksVerse: Petualangan Matriks 3D</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Google Fonts: Fredoka & Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- KaTeX for Math rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+
+    <!-- Canvas Confetti for Game/Quiz Victories -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        pixar: {
+                            blue: '#00A8FF',
+                            darkblue: '#0066FF',
+                            yellow: '#FFC000',
+                            orange: '#FF6B00',
+                            purple: '#8A2BE2',
+                            pink: '#FF3385',
+                            bg: '#EFF6FF',
+                            card: '#FFFFFF',
+                        }
+                    },
+                    fontFamily: {
+                        heading: ['Fredoka', 'sans-serif'],
+                        body: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'pixar-sm': '0 4px 0px 0px rgba(0, 0, 0, 0.15), 0 8px 15px -3px rgba(0, 0, 0, 0.1)',
+                        'pixar-md': '0 8px 0px 0px rgba(0, 0, 0, 0.15), 0 12px 20px -3px rgba(0, 0, 0, 0.15)',
+                        'pixar-lg': '0 12px 0px 0px rgba(0, 0, 0, 0.18), 0 20px 25px -5px rgba(0, 0, 0, 0.2)',
+                        'pixar-btn': '0 6px 0px 0px #0052cc',
+                        'pixar-btn-orange': '0 6px 0px 0px #cc5200',
+                        'pixar-btn-green': '0 6px 0px 0px #15803d',
+                        'pixar-btn-purple': '0 6px 0px 0px #5b21b6',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #F0F7FF;
+            background-image: radial-gradient(#d0e3ff 1.5px, transparent 1.5px);
+            background-size: 24px 24px;
+        }
+
+        h1, h2, h3, h4, .font-heading {
+            font-family: 'Fredoka', sans-serif;
+        }
+
+        /* 3D Pixar Card Hover Animations */
+        .pixar-card {
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .pixar-card:hover {
+            transform: translateY(-6px);
+        }
+
+        .pixar-button {
+            transition: all 0.1s ease;
+        }
+
+        .pixar-button:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0px 0px rgba(0, 0, 0, 0.2) !important;
+        }
+
+        /* Matrix Bracket Custom Styling */
+        .matrix-bracket {
+            position: relative;
+            padding: 8px 14px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .matrix-bracket::before, .matrix-bracket::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 10px;
+            border: 3px solid #0066FF;
+            border-radius: 6px;
+        }
+        .matrix-bracket::before {
+            left: 0;
+            border-right: none;
+        }
+        .matrix-bracket::after {
+            right: 0;
+            border-left: none;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #E2E8F0;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #00A8FF;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #0066FF;
+        }
+
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body class="text-slate-800 min-h-screen flex flex-col justify-between selection:bg-pixar-yellow selection:text-slate-900">
+
+    <!-- Top Navigation Header -->
+    <header class="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b-4 border-blue-200 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                <!-- App Logo -->
+                <div class="flex items-center gap-3 cursor-pointer" onclick="switchTab('materi')">
+                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-pixar-blue to-pixar-purple flex items-center justify-center text-white shadow-pixar-sm text-2xl font-black transform -rotate-6 hover:rotate-0 transition-transform">
+                        <i class="fa-solid fa-cubes"></i>
+                    </div>
+                    <div>
+                        <span class="font-heading text-2xl sm:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-pixar-darkblue via-pixar-purple to-pixar-pink">
+                            MatriksVerse
+                        </span>
+                        <span class="hidden sm:inline-block text-xs font-semibold px-2 py-0.5 bg-yellow-300 text-yellow-900 rounded-full ml-2 uppercase tracking-wider">Kelas 11 SMA</span>
+                    </div>
+                </div>
+
+                <!-- Navigation Tabs (Desktop) -->
+                <nav class="hidden md:flex items-center gap-2">
+                    <button onclick="switchTab('panduan')" id="nav-panduan" class="nav-btn px-4 py-2.5 rounded-xl font-heading text-slate-600 hover:text-pixar-darkblue hover:bg-blue-50 transition-all">
+                        <i class="fa-solid fa-compass mr-1.5 text-pixar-blue"></i> Panduan
+                    </button>
+                    <button onclick="switchTab('tujuan')" id="nav-tujuan" class="nav-btn px-4 py-2.5 rounded-xl font-heading text-slate-600 hover:text-pixar-darkblue hover:bg-blue-50 transition-all">
+                        <i class="fa-solid fa-bullseye mr-1.5 text-pixar-pink"></i> Tujuan
+                    </button>
+                    <button onclick="switchTab('materi')" id="nav-materi" class="nav-btn px-4 py-2.5 rounded-xl font-heading text-slate-600 hover:text-pixar-darkblue hover:bg-blue-50 transition-all">
+                        <i class="fa-solid fa-calculator mr-1.5 text-pixar-purple"></i> Materi & Simulasi
+                    </button>
+                    <button onclick="switchTab('gim')" id="nav-gim" class="nav-btn px-4 py-2.5 rounded-xl font-heading text-slate-600 hover:text-pixar-darkblue hover:bg-blue-50 transition-all">
+                        <i class="fa-solid fa-gamepad mr-1.5 text-pixar-orange"></i> Mini Gim
+                    </button>
+                    <button onclick="switchTab('quiz')" id="nav-quiz" class="nav-btn px-4 py-2.5 rounded-xl font-heading text-slate-600 hover:text-pixar-darkblue hover:bg-blue-50 transition-all">
+                        <i class="fa-solid fa-square-poll-vertical mr-1.5 text-green-500"></i> Kuis 5 PG
+                    </button>
+                    <button onclick="switchTab('pengembang')" id="nav-pengembang" class="nav-btn px-4 py-2.5 rounded-xl font-heading text-slate-600 hover:text-pixar-darkblue hover:bg-blue-50 transition-all">
+                        <i class="fa-solid fa-user-astronaut mr-1.5 text-yellow-500"></i> Pengembang
+                    </button>
+                </nav>
+
+                <!-- Mobile Menu Button -->
+                <div class="md:hidden flex items-center">
+                    <button onclick="toggleMobileMenu()" class="p-3 rounded-2xl bg-blue-100 text-pixar-darkblue focus:outline-none">
+                        <i class="fa-solid fa-bars text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Navigation Menu -->
+        <div id="mobile-menu" class="hidden md:hidden bg-white border-b-4 border-blue-200 px-4 pt-2 pb-4 space-y-2">
+            <button onclick="switchTab('panduan'); toggleMobileMenu()" class="w-full text-left px-4 py-3 rounded-xl font-heading text-slate-700 hover:bg-blue-50 flex items-center gap-3">
+                <i class="fa-solid fa-compass text-pixar-blue text-lg"></i> Panduan
+            </button>
+            <button onclick="switchTab('tujuan'); toggleMobileMenu()" class="w-full text-left px-4 py-3 rounded-xl font-heading text-slate-700 hover:bg-blue-50 flex items-center gap-3">
+                <i class="fa-solid fa-bullseye text-pixar-pink text-lg"></i> Tujuan Pembelajaran
+            </button>
+            <button onclick="switchTab('materi'); toggleMobileMenu()" class="w-full text-left px-4 py-3 rounded-xl font-heading text-slate-700 hover:bg-blue-50 flex items-center gap-3">
+                <i class="fa-solid fa-calculator text-pixar-purple text-lg"></i> Materi & Simulasi
+            </button>
+            <button onclick="switchTab('gim'); toggleMobileMenu()" class="w-full text-left px-4 py-3 rounded-xl font-heading text-slate-700 hover:bg-blue-50 flex items-center gap-3">
+                <i class="fa-solid fa-gamepad text-pixar-orange text-lg"></i> Mini Gim (3 Gim)
+            </button>
+            <button onclick="switchTab('quiz'); toggleMobileMenu()" class="w-full text-left px-4 py-3 rounded-xl font-heading text-slate-700 hover:bg-blue-50 flex items-center gap-3">
+                <i class="fa-solid fa-square-poll-vertical text-green-500 text-lg"></i> Kuis 5 PG
+            </button>
+            <button onclick="switchTab('pengembang'); toggleMobileMenu()" class="w-full text-left px-4 py-3 rounded-xl font-heading text-slate-700 hover:bg-blue-50 flex items-center gap-3">
+                <i class="fa-solid fa-user-astronaut text-yellow-500 text-lg"></i> Profil Pengembang
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Dynamic Content Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full">
+
+        <!-- ==================== TAB 1: PANDUAN ==================== -->
+        <section id="tab-panduan" class="tab-content hidden space-y-8 animate-fadeIn">
+            <!-- Banner Intro -->
+            <div class="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-3xl p-6 sm:p-10 text-white shadow-pixar-md relative overflow-hidden">
+                <div class="absolute -right-10 -bottom-10 opacity-20 text-white text-9xl">
+                    <i class="fa-solid fa-compass"></i>
+                </div>
+                <div class="max-w-2xl relative z-10 space-y-4">
+                    <span class="px-3 py-1 bg-yellow-400 text-yellow-950 font-heading font-bold rounded-full text-xs uppercase tracking-wider">Panduan Belajar</span>
+                    <h2 class="text-3xl sm:text-5xl font-black font-heading leading-tight">Halo, Champ! Selamat Datang di MatriksVerse 🚀</h2>
+                    <p class="text-blue-100 text-base sm:text-lg leading-relaxed">
+                        Siap bertualang di dunia matriks? Aplikasi interaktif ini dirancang khusus untuk kamu siswa Kelas 11 SMA (Fase E) agar belajar matematika jadi terasa seru seperti main game 3D!
+                    </p>
+                </div>
+            </div>
+
+            <!-- Steps Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-white rounded-3xl p-6 border-4 border-blue-100 shadow-pixar-sm pixar-card space-y-4">
+                    <div class="w-14 h-14 bg-blue-100 text-pixar-blue rounded-2xl flex items-center justify-center text-2xl font-black">
+                        1
+                    </div>
+                    <h3 class="text-xl font-bold font-heading text-slate-800">Eksplorasi Simulasi</h3>
+                    <p class="text-slate-600 text-sm leading-relaxed">
+                        Masuk ke menu **Materi & Simulasi**. Kamu bisa mencoba langsung mengubah angka-angka matriks, menggeser slider skalar, dan melihat perhitungan langkah demi langkah secara *realtime*!
+                    </p>
+                </div>
+
+                <div class="bg-white rounded-3xl p-6 border-4 border-orange-100 shadow-pixar-sm pixar-card space-y-4">
+                    <div class="w-14 h-14 bg-orange-100 text-pixar-orange rounded-2xl flex items-center justify-center text-2xl font-black">
+                        2
+                    </div>
+                    <h3 class="text-xl font-bold font-heading text-slate-800">Mainkan 3 Mini Gim</h3>
+                    <p class="text-slate-600 text-sm leading-relaxed">
+                        Uji ketangkasanmu di menu **Mini Gim**! Ada Ordo Matcher, Scalar Blaster, dan Cell Matrix Puzzle yang bakal menguji ketelitian dan kecepatannmu.
+                    </p>
+                </div>
+
+                <div class="bg-white rounded-3xl p-6 border-4 border-green-100 shadow-pixar-sm pixar-card space-y-4">
+                    <div class="w-14 h-14 bg-green-100 text-green-600 rounded-2xl flex items-center justify-center text-2xl font-black">
+                        3
+                    </div>
+                    <h3 class="text-xl font-bold font-heading text-slate-800">Taklukkan Kuis 5 PG</h3>
+                    <p class="text-slate-600 text-sm leading-relaxed">
+                        Uji pemahamanmu secara mandiri di **Kuis 5 Soal PG**. Dapatkan skor terbaikmu, temukan pembahasan lengkap di akhir kuis, dan jadilah Matrix Master!
+                    </p>
+                </div>
+            </div>
+
+            <!-- Quick Tip Callout -->
+            <div class="bg-amber-50 border-4 border-amber-200 rounded-3xl p-6 flex flex-col sm:flex-row items-center gap-5 shadow-pixar-sm">
+                <div class="w-16 h-16 rounded-2xl bg-amber-400 text-amber-950 flex items-center justify-center text-3xl shrink-0">
+                    <i class="fa-solid fa-lightbulb"></i>
+                </div>
+                <div>
+                    <h4 class="text-lg font-bold font-heading text-amber-950">Tips Belajar Matematika Asyik:</h4>
+                    <p class="text-amber-900 text-sm mt-1">Jangan cuma dibaca ya! Cobalah ubah angka-angka di simulator, amati perubahannya, lalu coba kerjakan gim tanpa bantuan kalkulator. *Practice makes perfect!*</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== TAB 2: TUJUAN PEMBELAJARAN ==================== -->
+        <section id="tab-tujuan" class="tab-content hidden space-y-8 animate-fadeIn">
+            <!-- Goal Header -->
+            <div class="bg-gradient-to-r from-pink-500 via-rose-500 to-red-500 rounded-3xl p-6 sm:p-10 text-white shadow-pixar-md relative overflow-hidden">
+                <div class="absolute -right-6 -bottom-6 opacity-20 text-white text-9xl">
+                    <i class="fa-solid fa-bullseye"></i>
+                </div>
+                <div class="max-w-3xl relative z-10 space-y-4">
+                    <span class="px-3 py-1 bg-white text-pink-600 font-heading font-bold rounded-full text-xs uppercase tracking-wider">Fase E - Kelas 11 SMA</span>
+                    <h2 class="text-3xl sm:text-5xl font-black font-heading leading-tight">Tujuan Pembelajaran Utama</h2>
+                    <div class="bg-white/20 backdrop-blur-md rounded-2xl p-5 border border-white/30 text-white text-lg sm:text-xl font-medium leading-relaxed shadow-inner">
+                        🎯 <span class="font-bold underline decoration-yellow-300">Capaian:</span> "Murid dapat memahami, melakukan operasi, dan menerapkan konsep matriks dalam menyelesaikan permasalahan kehidupan sehari-hari."
+                    </div>
+                </div>
+            </div>
+
+            <h3 class="text-2xl font-bold font-heading text-slate-800 flex items-center gap-3">
+                <i class="fa-solid fa-earth-americas text-pixar-blue"></i>
+                Aplikasi Matriks di Dunia Nyata (Real-World Pixar Stories)
+            </h3>
+
+            <!-- Real-World Examples Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Case 1: Inventaris Toko -->
+                <div class="bg-white rounded-3xl p-6 border-4 border-blue-200 shadow-pixar-sm pixar-card space-y-4 flex flex-col justify-between">
+                    <div>
+                        <div class="w-12 h-12 bg-blue-500 text-white rounded-2xl flex items-center justify-center text-xl font-bold shadow-md mb-4">
+                            <i class="fa-solid fa-store"></i>
+                        </div>
+                        <h4 class="text-xl font-bold font-heading text-slate-800">1. Data Stok Barang Toko</h4>
+                        <p class="text-slate-600 text-sm mt-2 leading-relaxed">
+                            Pemilik toko sepatu mencatat stok ukuran 39, 40, 41 di Toko A dan Toko B. Penjumlahan matriks membantu menghitung **total gabungan stok** dengan 1 kali hitung saja!
+                        </p>
+                    </div>
+                    <div class="bg-blue-50 p-3 rounded-2xl border border-blue-200 text-xs font-mono text-blue-900">
+                        Matriks Stok = $\begin{pmatrix} 15 & 20 \\ 10 & 25 \end{pmatrix}$
+                    </div>
+                </div>
+
+                <!-- Case 2: Grafis 3D & Animation -->
+                <div class="bg-white rounded-3xl p-6 border-4 border-purple-200 shadow-pixar-sm pixar-card space-y-4 flex flex-col justify-between">
+                    <div>
+                        <div class="w-12 h-12 bg-purple-500 text-white rounded-2xl flex items-center justify-center text-xl font-bold shadow-md mb-4">
+                            <i class="fa-solid fa-film"></i>
+                        </div>
+                        <h4 class="text-xl font-bold font-heading text-slate-800">2. Grafis 3D & Animasi Pixar</h4>
+                        <p class="text-slate-600 text-sm mt-2 leading-relaxed">
+                            Karakter 3D bergerak, berputar (rotasi), merenggang (skalasi) di layar film dibuat menggunakan **perkalian matriks transformasi koordinat** $(x, y, z)$.
+                        </p>
+                    </div>
+                    <div class="bg-purple-50 p-3 rounded-2xl border border-purple-200 text-xs font-mono text-purple-900">
+                        Rotasi 2D = $\begin{pmatrix} \cos\theta & -\sin\theta \\ \sin\theta & \cos\theta \end{pmatrix}$
+                    </div>
+                </div>
+
+                <!-- Case 3: Rating Game & AI -->
+                <div class="bg-white rounded-3xl p-6 border-4 border-yellow-200 shadow-pixar-sm pixar-card space-y-4 flex flex-col justify-between">
+                    <div>
+                        <div class="w-12 h-12 bg-yellow-500 text-white rounded-2xl flex items-center justify-center text-xl font-bold shadow-md mb-4">
+                            <i class="fa-solid fa-robot"></i>
+                        </div>
+                        <h4 class="text-xl font-bold font-heading text-slate-800">3. Rekomendasi Algoritma AI</h4>
+                        <p class="text-slate-600 text-sm mt-2 leading-relaxed">
+                            Aplikasi streaming film dan sosial media memprediksi tontonan kesukaanmu menggunakan **matriks preferensi pengguna** dengan miliaran data poin!
+                        </p>
+                    </div>
+                    <div class="bg-yellow-50 p-3 rounded-2xl border border-yellow-200 text-xs font-mono text-yellow-900">
+                        User Rating = $\begin{pmatrix} 5 & 4 & 1 \\ 2 & 5 & 5 \end{pmatrix}$
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== TAB 3: MATERI & SIMULASI ==================== -->
+        <section id="tab-materi" class="tab-content space-y-8 animate-fadeIn">
+            <!-- Header Section -->
+            <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-white p-6 rounded-3xl border-4 border-blue-200 shadow-pixar-sm">
+                <div>
+                    <h2 class="text-2xl sm:text-4xl font-black font-heading text-slate-800">Materi & Simulator Operasi Matriks</h2>
+                    <p class="text-slate-600 text-sm mt-1">Pilih sub-materi di bawah untuk membuka penjelasan interaktif dan simulatornya.</p>
+                </div>
+                <!-- Sub Navigation Tabs -->
+                <div class="flex flex-wrap gap-2 w-full md:w-auto">
+                    <button onclick="switchSubMateri('penjumlahan')" id="subnav-penjumlahan" class="subnav-btn px-4 py-2 rounded-2xl font-heading font-bold text-sm bg-pixar-blue text-white shadow-sm transition-all">
+                        ➕ Penjumlahan & Pengurangan
+                    </button>
+                    <button onclick="switchSubMateri('skalar')" id="subnav-skalar" class="subnav-btn px-4 py-2 rounded-2xl font-heading font-bold text-sm bg-slate-100 text-slate-700 hover:bg-slate-200 transition-all">
+                        ✖️ Perkalian Skalar ($k \cdot A$)
+                    </button>
+                    <button onclick="switchSubMateri('perkalian')" id="subnav-perkalian" class="subnav-btn px-4 py-2 rounded-2xl font-heading font-bold text-sm bg-slate-100 text-slate-700 hover:bg-slate-200 transition-all">
+                        ✖️ Perkalian Matriks ($A \times B$)
+                    </button>
+                </div>
+            </div>
+
+            <!-- SUB-MATERI 1: PENJUMLAHAN & PENGURANGAN -->
+            <div id="submateri-penjumlahan" class="submateri-content space-y-6">
+                <!-- Theoretical Card -->
+                <div class="bg-white rounded-3xl p-6 sm:p-8 border-4 border-blue-200 shadow-pixar-sm space-y-4">
+                    <div class="flex items-center gap-3">
+                        <span class="px-3 py-1 bg-blue-100 text-pixar-darkblue rounded-full text-xs font-bold uppercase font-heading">Syarat Utama</span>
+                        <h3 class="text-2xl font-bold font-heading text-slate-800">Penjumlahan & Pengurangan Matriks</h3>
+                    </div>
+                    <p class="text-slate-600 leading-relaxed text-sm sm:text-base">
+                        Dua atau lebih matriks **HANYA BISA** dijumlahkan atau dikurangi jika memiliki **ORDO YANG SAMA** (jumlah baris dan kolom persis sama). Cara menghitungnya sangat mudah: cukup operasikan elemen-elemen yang **seletak (posisinya sama)**.
+                    </p>
+                    <div class="p-4 bg-blue-50 rounded-2xl border-2 border-blue-200 text-center font-mono text-sm sm:text-base text-slate-800 overflow-x-auto">
+                        $$\begin{pmatrix} a & b \\ c & d \end{pmatrix} \pm \begin{pmatrix} e & f \\ g & h \end{pmatrix} = \begin{pmatrix} a \pm e & b \pm f \\ c \pm g & d \pm h \end{pmatrix}$$
+                    </div>
+                </div>
+
+                <!-- Simulator Card -->
+                <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-3xl p-6 sm:p-8 border-4 border-blue-300 shadow-pixar-md space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <h3 class="text-xl font-bold font-heading text-pixar-darkblue flex items-center gap-2">
+                            <i class="fa-solid fa-sliders"></i> Simulator Penjumlahan & Pengurangan 2x2
+                        </h3>
+                        <div class="flex items-center gap-3">
+                            <label class="text-sm font-bold text-slate-700">Pilih Operasi:</label>
+                            <select id="addsub-op" onchange="calculateAddSub()" class="px-4 py-2 rounded-xl border-2 border-blue-400 font-heading font-bold text-pixar-darkblue bg-white focus:outline-none cursor-pointer">
+                                <option value="add">Penjumlahan (+)</option>
+                                <option value="sub">Pengurangan (-)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Input Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-11 items-center gap-4 text-center">
+                        <!-- Matrix A -->
+                        <div class="md:col-span-4 bg-white p-4 rounded-2xl border-2 border-blue-300 shadow-sm space-y-2">
+                            <span class="font-heading font-bold text-blue-600 text-sm">Matriks A</span>
+                            <div class="grid grid-cols-2 gap-2 max-w-[180px] mx-auto p-2 bg-blue-50 rounded-xl border border-blue-200">
+                                <input type="number" id="a11" value="3" oninput="calculateAddSub()" class="w-full text-center py-2 font-bold text-lg rounded-lg border border-slate-300 focus:border-pixar-blue focus:ring-2 focus:ring-blue-200 outline-none">
+                                <input type="number" id="a12" value="5" oninput="calculateAddSub()" class="w-full text-center py-2 font-bold text-lg rounded-lg border border-slate-300 focus:border-pixar-blue focus:ring-2 focus:ring-blue-200 outline-none">
+                                <input type="number" id="a21" value="-2" oninput="calculateAddSub()" class="w-full text-center py-2 font-bold text-lg rounded-lg border border-slate-300 focus:border-pixar-blue focus:ring-2 focus:ring-blue-200 outline-none">
+                                <input type="number" id="a22" value="4" oninput="calculateAddSub()" class="w-full text-center py-2 font-bold text-lg rounded-lg border border-slate-300 focus:border-pixar-blue focus:ring-2 focus:ring-blue-200 outline-none">
+                            </div>
+                        </div>
+
+                        <!-- Operator Sign -->
+                        <div class="md:col-span-1 text-3xl font-black text-pixar-blue" id="addsub-sign-display">+</div>
+
+                        <!-- Matrix B -->
+                        <div class="md:col-span-4 bg-white p-4 rounded-2xl border-2 border-blue-300 shadow-sm space-y-2">
+                            <span class="font-heading font-bold text-blue-600 text-sm">Matriks B</span>
+                            <div class="grid grid-cols-2 gap-2 max-w-[180px] mx-auto p-2 bg-blue-50 rounded-xl border border-blue-200">
+                                <input type="number" id="b11" value="1" oninput="calculateAddSub()" class="w-full text-center py-2 font-bold text-lg rounded-lg border border-slate-300 focus:border-pixar-blue focus:ring-2 focus:ring-blue-200 outline-none">
+                                <input type="number" id="b12" value="-3" oninput="calculateAddSub()" class="w-full text-center py-2 font-bold text-lg rounded-lg border border-slate-300 focus:border-pixar-blue focus:ring-2 focus:ring-blue-200 outline-none">
+                                <input type="number" id="b21" value="6" oninput="calculateAddSub()" class="w-full text-center py-2 font-bold text-lg rounded-lg border border-slate-300 focus:border-pixar-blue focus:ring-2 focus:ring-blue-200 outline-none">
+                                <input type="number" id="b22" value="2" oninput="calculateAddSub()" class="w-full text-center py-2 font-bold text-lg rounded-lg border border-slate-300 focus:border-pixar-blue focus:ring-2 focus:ring-blue-200 outline-none">
+                            </div>
+                        </div>
+
+                        <!-- Equals Sign -->
+                        <div class="md:col-span-2 text-3xl font-black text-slate-700">=</div>
+                    </div>
+
+                    <!-- Step-by-Step Explanation & Result -->
+                    <div class="bg-white rounded-2xl p-6 border-2 border-blue-300 shadow-sm space-y-4">
+                        <h4 class="font-heading font-bold text-slate-800 text-lg flex items-center gap-2">
+                            <i class="fa-solid fa-square-root-variable text-pixar-purple"></i> Langkah Perhitungan & Hasil Akhir:
+                        </h4>
+                        <div id="addsub-steps" class="font-mono text-center text-sm sm:text-base p-4 bg-slate-50 rounded-xl border border-slate-200">
+                            <!-- Injected by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SUB-MATERI 2: PERKALIAN SKALAR -->
+            <div id="submateri-skalar" class="submateri-content hidden space-y-6">
+                <!-- Theoretical Card -->
+                <div class="bg-white rounded-3xl p-6 sm:p-8 border-4 border-purple-200 shadow-pixar-sm space-y-4">
+                    <div class="flex items-center gap-3">
+                        <span class="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-bold uppercase font-heading">Konstanta Skalar</span>
+                        <h3 class="text-2xl font-bold font-heading text-slate-800">Perkalian Skalar dengan Matriks ($k \cdot A$)</h3>
+                    </div>
+                    <p class="text-slate-600 leading-relaxed text-sm sm:text-base">
+                        Perkalian skalar dilakukan dengan cara **mengalikan konstanta angka ($k$) ke setiap elemen** yang ada di dalam matriks.
+                    </p>
+                    <div class="p-4 bg-purple-50 rounded-2xl border-2 border-purple-200 text-center font-mono text-sm sm:text-base text-slate-800">
+                        $$k \cdot \begin{pmatrix} a & b \\ c & d \end{pmatrix} = \begin{pmatrix} k \cdot a & k \cdot b \\ k \cdot c & k \cdot d \end{pmatrix}$$
+                    </div>
+                </div>
+
+                <!-- Simulator Card -->
+                <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-3xl p-6 sm:p-8 border-4 border-purple-300 shadow-pixar-md space-y-6">
+                    <h3 class="text-xl font-bold font-heading text-purple-800 flex items-center gap-2">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Simulator Perkalian Skalar Dynamic
+                    </h3>
+
+                    <div class="bg-white p-6 rounded-2xl border-2 border-purple-200 shadow-sm space-y-4">
+                        <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                            <label class="font-heading font-bold text-slate-800">
+                                Geser Nilai Skalar ($k$): <span id="scalar-val-display" class="text-2xl text-purple-600 font-black ml-2">3</span>
+                            </label>
+                            <input type="range" id="scalar-k" min="-5" max="5" value="3" step="1" oninput="calculateScalar()" class="w-full sm:w-64 h-3 bg-purple-200 rounded-lg appearance-none cursor-pointer accent-purple-600">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-11 items-center gap-4 text-center">
+                        <div class="md:col-span-2 text-2xl font-bold font-heading text-purple-700">
+                            <span id="scalar-k-show">3</span> $\cdot$
+                        </div>
+
+                        <!-- Matrix A Input -->
+                        <div class="md:col-span-4 bg-white p-4 rounded-2xl border-2 border-purple-300 shadow-sm space-y-2">
+                            <span class="font-heading font-bold text-purple-600 text-sm">Matriks A</span>
+                            <div class="grid grid-cols-2 gap-2 max-w-[180px] mx-auto p-2 bg-purple-50 rounded-xl border border-purple-200">
+                                <input type="number" id="sa11" value="2" oninput="calculateScalar()" class="w-full text-center py-2 font-bold text-lg rounded-lg border border-slate-300 focus:border-purple-500 outline-none">
+                                <input type="number" id="sa12" value="-4" oninput="calculateScalar()" class="w-full text-center py-2 font-bold text-lg rounded-lg border border-slate-300 focus:border-purple-500 outline-none">
+                                <input type="number" id="sa21" value="1" oninput="calculateScalar()" class="w-full text-center py-2 font-bold text-lg rounded-lg border border-slate-300 focus:border-purple-500 outline-none">
+                                <input type="number" id="sa22" value="5" oninput="calculateScalar()" class="w-full text-center py-2 font-bold text-lg rounded-lg border border-slate-300 focus:border-purple-500 outline-none">
+                            </div>
+                        </div>
+
+                        <div class="md:col-span-1 text-3xl font-black text-slate-700">=</div>
+
+                        <!-- Result Matrix Output -->
+                        <div class="md:col-span-4 bg-white p-4 rounded-2xl border-2 border-purple-400 shadow-md space-y-2">
+                            <span class="font-heading font-bold text-purple-700 text-sm">Hasil Matriks $k \cdot A$</span>
+                            <div id="scalar-result-grid" class="grid grid-cols-2 gap-2 max-w-[180px] mx-auto p-2 bg-purple-100 rounded-xl border border-purple-300 font-bold text-xl text-purple-900">
+                                <!-- Injected via JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SUB-MATERI 3: PERKALIAN MATRIKS -->
+            <div id="submateri-perkalian" class="submateri-content hidden space-y-6">
+                <!-- Theoretical Card -->
+                <div class="bg-white rounded-3xl p-6 sm:p-8 border-4 border-orange-200 shadow-pixar-sm space-y-4">
+                    <div class="flex items-center gap-3">
+                        <span class="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-xs font-bold uppercase font-heading">Aturan Baris $\times$ Kolom</span>
+                        <h3 class="text-2xl font-bold font-heading text-slate-800">Perkalian Dua Matriks ($A \times B$)</h3>
+                    </div>
+                    <p class="text-slate-600 leading-relaxed text-sm sm:text-base">
+                        Perkalian matriks $A_{m \times n} \times B_{n \times p}$ hanya bisa dilakukan jika **Jumlah Kolom Matriks A = Jumlah Baris Matriks B**. Hasil elemennya diperoleh dari **perkalian pasangan Baris Matriks A dengan Kolom Matriks B** lalu dijumlahkan.
+                    </p>
+                    <div class="p-4 bg-orange-50 rounded-2xl border-2 border-orange-200 text-center font-mono text-sm sm:text-base text-slate-800 overflow-x-auto">
+                        $$\begin{pmatrix} a & b \\ c & d \end{pmatrix} \cdot \begin{pmatrix} e & f \\ g & h \end{pmatrix} = \begin{pmatrix} (ae + bg) & (af + bh) \\ (ce + dg) & (cf + dh) \end{pmatrix}$$
+                    </div>
+                </div>
+
+                <!-- Simulator Card -->
+                <div class="bg-gradient-to-br from-orange-50 to-amber-50 rounded-3xl p-6 sm:p-8 border-4 border-orange-300 shadow-pixar-md space-y-6">
+                    <h3 class="text-xl font-bold font-heading text-orange-800 flex items-center gap-2">
+                        <i class="fa-solid fa-calculator"></i> Simulator Perkalian Matriks 2x2
+                    </h3>
+
+                    <div class="grid grid-cols-1 md:grid-cols-11 items-center gap-4 text-center">
+                        <!-- Matrix A -->
+                        <div class="md:col-span-4 bg-white p-4 rounded-2xl border-2 border-orange-300 shadow-sm space-y-2">
+                            <span class="font-heading font-bold text-orange-600 text-sm">Matriks A</span>
+                            <div class="grid grid-cols-2 gap-2 max-w-[180px] mx-auto p-2 bg-orange-50 rounded-xl border border-orange-200">
+                                <input type="number" id="ma11" value="1" oninput="calculateMatrixMul()" class="w-full text-center py-2 font-bold text-lg rounded-lg border border-slate-300 focus:border-orange-500 outline-none">
+                                <input type="number" id="ma12" value="2" oninput="calculateMatrixMul()" class="w-full text-center py-2 font-bold text-lg rounded-lg border border-slate-300 focus:border-orange-500 outline-none">
+                                <input type="number" id="ma21" value="3" oninput="calculateMatrixMul()" class="w-full text-center py-2 font-bold text-lg rounded-lg border border-slate-300 focus:border-orange-500 outline-none">
+                                <input type="number" id="ma22" value="4" oninput="calculateMatrixMul()" class="w-full text-center py-2 font-bold text-lg rounded-lg border border-slate-300 focus:border-orange-500 outline-none">
+                            </div>
+                        </div>
+
+                        <div class="md:col-span-1 text-3xl font-black text-orange-600">$\times$</div>
+
+                        <!-- Matrix B -->
+                        <div class="md:col-span-4 bg-white p-4 rounded-2xl border-2 border-orange-300 shadow-sm space-y-2">
+                            <span class="font-heading font-bold text-orange-600 text-sm">Matriks B</span>
+                            <div class="grid grid-cols-2 gap-2 max-w-[180px] mx-auto p-2 bg-orange-50 rounded-xl border border-orange-200">
+                                <input type="number" id="mb11" value="2" oninput="calculateMatrixMul()" class="w-full text-center py-2 font-bold text-lg rounded-lg border border-slate-300 focus:border-orange-500 outline-none">
+                                <input type="number" id="mb12" value="0" oninput="calculateMatrixMul()" class="w-full text-center py-2 font-bold text-lg rounded-lg border border-slate-300 focus:border-orange-500 outline-none">
+                                <input type="number" id="mb21" value="1" oninput="calculateMatrixMul()" class="w-full text-center py-2 font-bold text-lg rounded-lg border border-slate-300 focus:border-orange-500 outline-none">
+                                <input type="number" id="mb22" value="3" oninput="calculateMatrixMul()" class="w-full text-center py-2 font-bold text-lg rounded-lg border border-slate-300 focus:border-orange-500 outline-none">
+                            </div>
+                        </div>
+
+                        <div class="md:col-span-2 text-3xl font-black text-slate-700">=</div>
+                    </div>
+
+                    <!-- Detailed Explanation -->
+                    <div class="bg-white rounded-2xl p-6 border-2 border-orange-300 shadow-sm space-y-4">
+                        <h4 class="font-heading font-bold text-slate-800 text-lg flex items-center gap-2">
+                            <i class="fa-solid fa-list-ol text-orange-500"></i> Detail Langkah Baris $\times$ Kolom:
+                        </h4>
+                        <div id="matrix-mul-steps" class="font-mono text-center text-sm sm:text-base p-4 bg-orange-50/50 rounded-xl border border-orange-200 space-y-2 text-slate-800">
+                            <!-- Injected JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== TAB 4: MINI GIM ==================== -->
+        <section id="tab-gim" class="tab-content hidden space-y-8 animate-fadeIn">
+            <!-- Header Gim -->
+            <div class="bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 rounded-3xl p-6 sm:p-8 text-white shadow-pixar-md flex flex-col md:flex-row items-center justify-between gap-6">
+                <div>
+                    <span class="px-3 py-1 bg-yellow-300 text-yellow-950 font-heading font-bold rounded-full text-xs uppercase tracking-wider">Arcade Zone</span>
+                    <h2 class="text-3xl sm:text-4xl font-black font-heading mt-2">Arena Mini Gim Matriks 🎮</h2>
+                    <p class="text-amber-100 text-sm sm:text-base mt-1">Uji ketangkasan dan pemahamanmu lewat 3 gim seru berhadiah skor terbaik!</p>
+                </div>
+                <!-- Game Switcher Buttons -->
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="switchGame(1)" id="btn-game-1" class="px-4 py-2.5 rounded-2xl font-heading font-bold text-sm bg-white text-orange-600 shadow-md">
+                        Gim 1: Ordo Matcher
+                    </button>
+                    <button onclick="switchGame(2)" id="btn-game-2" class="px-4 py-2.5 rounded-2xl font-heading font-bold text-sm bg-orange-600 text-white hover:bg-orange-700">
+                        Gim 2: Scalar Blaster
+                    </button>
+                    <button onclick="switchGame(3)" id="btn-game-3" class="px-4 py-2.5 rounded-2xl font-heading font-bold text-sm bg-orange-600 text-white hover:bg-orange-700">
+                        Gim 3: Cell Matrix Puzzle
+                    </button>
+                </div>
+            </div>
+
+            <!-- GIM 1: ORDO MATCHER -->
+            <div id="game-container-1" class="bg-white rounded-3xl p-6 sm:p-8 border-4 border-orange-200 shadow-pixar-sm space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b-2 border-slate-100 pb-4">
+                    <div>
+                        <h3 class="text-2xl font-bold font-heading text-slate-800">Gim 1: Ordo Matcher 🧩</h3>
+                        <p class="text-slate-600 text-sm">Tebak ordo (ukuran Baris $\times$ Kolom) matriks yang tampil di layar!</p>
+                    </div>
+                    <div class="flex items-center gap-4 bg-orange-50 px-4 py-2 rounded-2xl border border-orange-200">
+                        <span class="font-heading font-bold text-slate-700">Skor: <span id="g1-score" class="text-2xl text-orange-600 font-black">0</span></span>
+                    </div>
+                </div>
+
+                <!-- Game Canvas Box -->
+                <div class="bg-gradient-to-b from-slate-900 to-slate-800 rounded-3xl p-8 text-center text-white space-y-6 shadow-inner">
+                    <span class="text-xs font-mono uppercase tracking-widest text-orange-400">Tentukan Ordo Matriks Ini:</span>
+
+                    <!-- Matrix Visual Display -->
+                    <div id="g1-matrix-display" class="flex justify-center items-center my-4 font-mono text-xl sm:text-2xl text-yellow-300">
+                        <!-- Injected JS -->
+                    </div>
+
+                    <!-- Multiple Choice Options -->
+                    <div id="g1-options" class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl mx-auto">
+                        <!-- Injected JS -->
+                    </div>
+
+                    <div id="g1-feedback" class="text-lg font-bold font-heading h-8"></div>
+                </div>
+            </div>
+
+            <!-- GIM 2: SCALAR BLASTER -->
+            <div id="game-container-2" class="hidden bg-white rounded-3xl p-6 sm:p-8 border-4 border-purple-200 shadow-pixar-sm space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b-2 border-slate-100 pb-4">
+                    <div>
+                        <h3 class="text-2xl font-bold font-heading text-slate-800">Gim 2: Scalar Blaster ⚡</h3>
+                        <p class="text-slate-600 text-sm">Hitung cepat perkalian skalar sebelum waktu 30 detik habis!</p>
+                    </div>
+                    <div class="flex items-center gap-6 bg-purple-50 px-4 py-2 rounded-2xl border border-purple-200">
+                        <span class="font-heading font-bold text-slate-700">Waktu: <span id="g2-timer" class="text-2xl text-red-500 font-black">30</span>s</span>
+                        <span class="font-heading font-bold text-slate-700">Skor: <span id="g2-score" class="text-2xl text-purple-600 font-black">0</span></span>
+                    </div>
+                </div>
+
+                <div class="bg-gradient-to-b from-purple-900 to-indigo-950 rounded-3xl p-8 text-center text-white space-y-6 shadow-inner">
+                    <button id="g2-start-btn" onclick="startG2()" class="px-8 py-4 bg-yellow-400 text-yellow-950 font-heading font-black text-xl rounded-2xl shadow-pixar-btn-orange hover:bg-yellow-300 transition-all pixar-button">
+                        <i class="fa-solid fa-play mr-2"></i> MULAI GIM SCALAR BLASTER
+                    </button>
+
+                    <div id="g2-play-area" class="hidden space-y-6">
+                        <div class="text-xl sm:text-2xl font-bold font-heading text-purple-200" id="g2-question-text">
+                            <!-- Injected JS -->
+                        </div>
+
+                        <div id="g2-options" class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl mx-auto">
+                            <!-- Injected JS -->
+                        </div>
+                    </div>
+
+                    <div id="g2-feedback" class="text-lg font-bold font-heading h-8 text-yellow-300"></div>
+                </div>
+            </div>
+
+            <!-- GIM 3: CELL MATRIX PUZZLE -->
+            <div id="game-container-3" class="hidden bg-white rounded-3xl p-6 sm:p-8 border-4 border-blue-200 shadow-pixar-sm space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b-2 border-slate-100 pb-4">
+                    <div>
+                        <h3 class="text-2xl font-bold font-heading text-slate-800">Gim 3: Cell Matrix Puzzle 🧩</h3>
+                        <p class="text-slate-600 text-sm">Lengkapi sel matriks yang kosong $(?)$ pada hasil penjumlahan!</p>
+                    </div>
+                    <div class="flex items-center gap-4 bg-blue-50 px-4 py-2 rounded-2xl border border-blue-200">
+                        <span class="font-heading font-bold text-slate-700">Skor: <span id="g3-score" class="text-2xl text-pixar-blue font-black">0</span></span>
+                    </div>
+                </div>
+
+                <div class="bg-gradient-to-b from-blue-900 to-slate-900 rounded-3xl p-8 text-center text-white space-y-6 shadow-inner">
+                    <div id="g3-puzzle-display" class="flex flex-wrap justify-center items-center gap-3 text-lg sm:text-2xl font-mono text-yellow-300">
+                        <!-- Injected JS -->
+                    </div>
+
+                    <div id="g3-number-options" class="flex flex-wrap justify-center gap-3 max-w-md mx-auto pt-4">
+                        <!-- Injected JS -->
+                    </div>
+
+                    <div id="g3-feedback" class="text-lg font-bold font-heading h-8 text-green-400"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== TAB 5: QUIZ 5 PG ==================== -->
+        <section id="tab-quiz" class="tab-content hidden space-y-8 animate-fadeIn">
+            <!-- Quiz Header -->
+            <div class="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 rounded-3xl p-6 sm:p-8 text-white shadow-pixar-md flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div>
+                    <span class="px-3 py-1 bg-yellow-300 text-yellow-950 font-heading font-bold rounded-full text-xs uppercase tracking-wider">Evaluasi Pemahaman</span>
+                    <h2 class="text-3xl sm:text-4xl font-black font-heading mt-2">Kuis 5 Soal Pilihan Ganda 📝</h2>
+                    <p class="text-emerald-100 text-sm mt-1">Uji kemampuan matematis matriksmu. Pilih jawaban terbaik dari Soal 1 s.d. 5!</p>
+                </div>
+                <div class="text-center bg-white/20 backdrop-blur-md px-6 py-3 rounded-2xl border border-white/30">
+                    <span class="text-xs uppercase tracking-wider font-bold block text-emerald-100">Target Minimal</span>
+                    <span class="text-2xl font-black font-heading">80 / 100</span>
+                </div>
+            </div>
+
+            <!-- Quiz Questions Form Wrapper -->
+            <div id="quiz-form-wrapper" class="space-y-6">
+                <!-- Question Cards Injected dynamically by JS -->
+                <div id="quiz-questions-container" class="space-y-6"></div>
+
+                <!-- Submit Button -->
+                <div class="text-center pt-4">
+                    <button onclick="submitQuiz()" class="px-10 py-4 bg-green-500 hover:bg-green-600 text-white font-heading font-black text-xl rounded-2xl shadow-pixar-btn-green pixar-button transition-all">
+                        <i class="fa-solid fa-paper-plane mr-2"></i> KIRIM JAWABAN KUIS
+                    </button>
+                </div>
+            </div>
+
+            <!-- Quiz Results & Explanations Card (Hidden by default) -->
+            <div id="quiz-result-card" class="hidden bg-white rounded-3xl p-6 sm:p-10 border-4 border-green-300 shadow-pixar-md space-y-8">
+                <div class="text-center space-y-4">
+                    <div class="w-24 h-24 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-4xl mx-auto shadow-inner">
+                        <i class="fa-solid fa-trophy"></i>
+                    </div>
+                    <h3 class="text-3xl font-black font-heading text-slate-800">Hasil Evaluasi Kuis</h3>
+                    <div class="text-5xl font-black font-heading text-green-600" id="quiz-score-num">100 / 100</div>
+                    <p id="quiz-feedback-msg" class="text-slate-600 text-lg font-medium"></p>
+                </div>
+
+                <hr class="border-slate-200">
+
+                <!-- Detailed Discussion Section -->
+                <div class="space-y-6">
+                    <h4 class="text-2xl font-bold font-heading text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-book-open text-pixar-blue"></i> Pembahasan Lengkap Soal Kuis
+                    </h4>
+                    <div id="quiz-explanations-container" class="space-y-4"></div>
+                </div>
+
+                <div class="text-center pt-4">
+                    <button onclick="resetQuiz()" class="px-8 py-3 bg-pixar-blue text-white font-heading font-bold rounded-xl shadow-pixar-btn hover:bg-blue-600 transition-all">
+                        <i class="fa-solid fa-rotate-right mr-2"></i> Coba Kuis Lagi
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== TAB 6: PENGEMBANG ==================== -->
+        <section id="tab-pengembang" class="tab-content hidden space-y-8 animate-fadeIn">
+            <div class="max-w-3xl mx-auto bg-white rounded-3xl p-6 sm:p-10 border-4 border-yellow-300 shadow-pixar-md space-y-8 text-center relative overflow-hidden">
+                <div class="absolute -top-12 -right-12 w-40 h-40 bg-yellow-100 rounded-full blur-2xl opacity-60"></div>
+
+                <!-- Avatar Badge -->
+                <div class="relative inline-block">
+                    <div class="w-36 h-36 rounded-full bg-gradient-to-tr from-yellow-400 via-orange-400 to-pink-500 p-1.5 shadow-pixar-md mx-auto">
+                        <div class="w-full h-full rounded-full bg-white flex items-center justify-center text-6xl text-pixar-darkblue">
+                            <i class="fa-solid fa-user-tie"></i>
+                        </div>
+                    </div>
+                    <span class="absolute bottom-1 right-1 bg-green-500 text-white text-xs px-3 py-1 rounded-full font-bold border-2 border-white shadow">
+                        Guru Matematika
+                    </span>
+                </div>
+
+                <div class="space-y-2">
+                    <h2 class="text-3xl sm:text-4xl font-black font-heading text-slate-800">Mislakhudin, S.Pd.</h2>
+                    <p class="text-pixar-darkblue font-heading font-bold text-lg">Guru Matematika SMAS Daar El Qolam 2</p>
+                    <p class="text-slate-500 text-sm">Spesialis Media Pembelajaran Interaktif Matematika SMA</p>
+                </div>
+
+                <div class="p-6 bg-yellow-50/80 rounded-2xl border-2 border-yellow-200 text-slate-700 space-y-3 text-left sm:text-center">
+                    <p class="font-heading font-bold text-yellow-950 text-base">💬 Pesan Motivasi untuk Murid Kelas 11:</p>
+                    <p class="text-sm sm:text-base leading-relaxed italic">
+                        "Matematika bukan tentang menghafal rumus rumit, tapi tentang melatih pola pikir logis dan kreatif dalam menyelesaikan masalah. Semoga media interaktif MatriksVerse ini membuat belajar matriks jadi lebih mudah, menyenangkan, dan berkesan!"
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-left font-medium text-sm">
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 flex items-center gap-3">
+                        <i class="fa-solid fa-school text-pixar-blue text-xl"></i>
+                        <div>
+                            <span class="text-xs text-slate-400 block">Instansi</span>
+                            <span class="text-slate-800 font-bold">SMAS Daar El Qolam 2</span>
+                        </div>
+                    </div>
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 flex items-center gap-3">
+                        <i class="fa-solid fa-graduation-cap text-pixar-pink text-xl"></i>
+                        <div>
+                            <span class="text-xs text-slate-400 block">Sasaran Belajar</span>
+                            <span class="text-slate-800 font-bold">Kelas 11 SMA (Fase E)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t-4 border-blue-200 py-6 mt-12 text-center text-xs text-slate-500 font-medium">
+        <div class="max-w-7xl mx-auto px-4 space-y-2">
+            <p>© 2026 **MatriksVerse** - Media Pembelajaran Interaktif Matematika Kelas 11 SMA (Fase E).</p>
+            <p>Dikembangkan oleh **Mislakhudin** (Guru Matematika SMAS Daar El Qolam 2)</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // ==================== GLOBAL APP STATE ====================
+        let currentTab = 'materi';
+
+        // --- GIM 1 STATE ---
+        let g1Score = 0;
+        let g1CurrentMatrix = null;
+        const g1Questions = [
+            { matrix: "\\begin{pmatrix} 3 & 4 \\\\ 1 & 2 \\end{pmatrix}", answer: "2x2", options: ["2x2", "2x1", "1x2", "3x2"] },
+            { matrix: "\\begin{pmatrix} 5 & -1 & 0 \\\\ 2 & 8 & 4 \\end{pmatrix}", answer: "2x3", options: ["2x3", "3x2", "2x2", "3x3"] },
+            { matrix: "\\begin{pmatrix} 7 \\\\ -3 \\\\ 9 \\end{pmatrix}", answer: "3x1", options: ["3x1", "1x3", "3x3", "2x1"] },
+            { matrix: "\\begin{pmatrix} 1 & 8 & 4 \\end{pmatrix}", answer: "1x3", options: ["1x3", "3x1", "1x1", "3x3"] },
+            { matrix: "\\begin{pmatrix} 1 & 0 & 2 \\\\ 0 & 1 & 5 \\\\ 4 & -2 & 3 \\end{pmatrix}", answer: "3x3", options: ["3x3", "2x3", "3x2", "2x2"] }
+        ];
+
+        // --- GIM 2 STATE ---
+        let g2Score = 0;
+        let g2Timer = 30;
+        let g2Interval = null;
+        let g2CurrentQuestion = null;
+
+        // --- GIM 3 STATE ---
+        let g3Score = 0;
+        let g3CurrentQuestion = null;
+
+        // --- QUIZ DATA ---
+        const quizData = [
+            {
+                id: 1,
+                question: "Diketahui $A = \\begin{pmatrix} 3 & 2 \\\\ -1 & 4 \\end{pmatrix}$ dan $B = \\begin{pmatrix} 5 & -3 \\\\ 2 & 1 \\end{pmatrix}$. Hasil dari $A + B$ adalah...",
+                options: [
+                    "\\begin{pmatrix} 8 & -1 \\\\ 1 & 5 \\end{pmatrix}",
+                    "\\begin{pmatrix} 8 & 5 \\\\ 1 & 5 \\end{pmatrix}",
+                    "\\begin{pmatrix} 2 & -5 \\\\ -3 & 3 \\end{pmatrix}",
+                    "\\begin{pmatrix} 8 & -1 \\\\ -1 & 3 \\end{pmatrix}"
+                ],
+                correct: 0,
+                explanation: "Penjumlahan dilakukan pada elemen seletak: <br> Baris 1: $(3+5 = 8)$, $(2 + (-3) = -1)$ <br> Baris 2: $(-1+2 = 1)$, $(4+1 = 5)$. <br> Sehingga $A+B = \\begin{pmatrix} 8 & -1 \\\\ 1 & 5 \\end{pmatrix}$."
+            },
+            {
+                id: 2,
+                question: "Jika dua matriks memenuhi kesamaan $\\begin{pmatrix} 2x & 4 \\\\ -3 & 5 \\end{pmatrix} = \\begin{pmatrix} 10 & 4 \\\\ -3 & y+1 \\end{pmatrix}$, berapakah nilai $x + y$?",
+                options: [
+                    "7",
+                    "9",
+                    "11",
+                    "5"
+                ],
+                correct: 1,
+                explanation: "Dari kesamaan elemen seletak: <br> $2x = 10 \\Rightarrow x = 5$ <br> $y + 1 = 5 \\Rightarrow y = 4$ <br> Maka, $x + y = 5 + 4 = 9$."
+            },
+            {
+                id: 3,
+                question: "Diketahui matriks $C = \\begin{pmatrix} 2 & -4 \\\\ 1 & 3 \\end{pmatrix}$. Hasil perkalian skalar $3C$ adalah...",
+                options: [
+                    "\\begin{pmatrix} 6 & -4 \\\\ 3 & 3 \\end{pmatrix}",
+                    "\\begin{pmatrix} 6 & -12 \\\\ 3 & 9 \\end{pmatrix}",
+                    "\\begin{pmatrix} 5 & -1 \\\\ 4 & 6 \\end{pmatrix}",
+                    "\\begin{pmatrix} 6 & -12 \\\\ 1 & 3 \\end{pmatrix}"
+                ],
+                correct: 1,
+                explanation: "Kalikan konstanta $3$ ke setiap sel matriks $C$: <br> $3 \\cdot 2 = 6$, $3 \\cdot (-4) = -12$, $3 \\cdot 1 = 3$, $3 \\cdot 3 = 9$. <br> Hasil $= \\begin{pmatrix} 6 & -12 \\\\ 3 & 9 \\end{pmatrix}$."
+            },
+            {
+                id: 4,
+                question: "Diketahui matriks $A = \\begin{pmatrix} 1 & 2 \\\\ 0 & 3 \\end{pmatrix}$ dan $B = \\begin{pmatrix} 4 & 1 \\\\ 2 & 0 \\end{pmatrix}$. Hasil perkalian $A \\times B$ adalah...",
+                options: [
+                    "\\begin{pmatrix} 8 & 1 \\\\ 6 & 0 \\end{pmatrix}",
+                    "\\begin{pmatrix} 4 & 2 \\\\ 0 & 0 \\end{pmatrix}",
+                    "\\begin{pmatrix} 8 & 1 \\\\ 6 & 3 \\end{pmatrix}",
+                    "\\begin{pmatrix} 5 & 3 \\\\ 2 & 3 \\end{pmatrix}"
+                ],
+                correct: 0,
+                explanation: "Gunakan aturan Baris $\\times$ Kolom: <br> Sel (1,1): $(1 \\cdot 4) + (2 \\cdot 2) = 4 + 4 = 8$ <br> Sel (1,2): $(1 \\cdot 1) + (2 \\cdot 0) = 1 + 0 = 1$ <br> Sel (2,1): $(0 \\cdot 4) + (3 \\cdot 2) = 0 + 6 = 6$ <br> Sel (2,2): $(0 \\cdot 1) + (3 \\cdot 0) = 0 + 0 = 0$. <br> Hasil $= \\begin{pmatrix} 8 & 1 \\\\ 6 & 0 \\end{pmatrix}$."
+            },
+            {
+                id: 5,
+                question: "Aplikasi Sehari-hari: Toko 'Serba Ada' mencatat penjualan baju di Hari Senin $\\begin{pmatrix} 10 & 15 \\\\ 8 & 12 \\end{pmatrix}$ dan Hari Selasa $\\begin{pmatrix} 12 & 10 \\\\ 5 & 15 \\end{pmatrix}$. Berapakah total gabungan stok baju terjual selama dua hari tersebut?",
+                options: [
+                    "\\begin{pmatrix} 22 & 25 \\\\ 13 & 27 \\end{pmatrix}",
+                    "\\begin{pmatrix} 20 & 25 \\\\ 13 & 27 \\end{pmatrix}",
+                    "\\begin{pmatrix} 22 & 15 \\\\ 13 & 27 \\end{pmatrix}",
+                    "\\begin{pmatrix} 22 & 25 \\\\ 15 & 27 \\end{pmatrix}"
+                ],
+                correct: 0,
+                explanation: "Jumlahkan matriks penjualan Senin dan Selasa: <br> $\\begin{pmatrix} 10+12 & 15+10 \\\\ 8+5 & 12+15 \\end{pmatrix} = \\begin{pmatrix} 22 & 25 \\\\ 13 & 27 \\end{pmatrix}$."
+            }
+        ];
+
+        // ==================== INITIALIZATION ====================
+        window.onload = function() {
+            switchTab('materi');
+            calculateAddSub();
+            calculateScalar();
+            calculateMatrixMul();
+
+            // Init Mini Games
+            initG1();
+            initG3();
+
+            // Render Quiz Questions
+            renderQuizQuestions();
+        };
+
+        // ==================== TAB NAVIGATION LOGIC ====================
+        function switchTab(tabId) {
+            currentTab = tabId;
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById('tab-' + tabId).classList.remove('hidden');
+
+            // Highlight nav button
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-blue-100', 'text-pixar-darkblue', 'font-bold');
+            });
+            const activeNav = document.getElementById('nav-' + tabId);
+            if(activeNav) {
+                activeNav.classList.add('bg-blue-100', 'text-pixar-darkblue', 'font-bold');
+            }
+
+            // Re-render KaTeX math notations
+            renderMathInTab(tabId);
+        }
+
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        }
+
+        function renderMathInTab(tabId) {
+            setTimeout(() => {
+                if (window.katex) {
+                    const tabEl = document.getElementById('tab-' + tabId);
+                    if(tabEl) {
+                        const mathEls = tabEl.querySelectorAll('.katex-render');
+                        mathEls.forEach(el => {
+                            katex.render(el.getAttribute('data-expr') || el.textContent, el, { throwOnError: false });
+                        });
+                    }
+                }
+            }, 50);
+        }
+
+        // ==================== SUB-MATERI SWITCHER ====================
+        function switchSubMateri(subId) {
+            document.querySelectorAll('.submateri-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById('submateri-' + subId).classList.remove('hidden');
+
+            // Buttons style
+            document.querySelectorAll('.subnav-btn').forEach(btn => {
+                btn.classList.remove('bg-pixar-blue', 'text-white');
+                btn.classList.add('bg-slate-100', 'text-slate-700');
+            });
+            const activeSub = document.getElementById('subnav-' + subId);
+            if(activeSub) {
+                activeSub.classList.add('bg-pixar-blue', 'text-white');
+                activeSub.classList.remove('bg-slate-100', 'text-slate-700');
+            }
+        }
+
+        // ==================== SIMULATORS LOGIC ====================
+
+        // 1. Simulator Penjumlahan & Pengurangan
+        function calculateAddSub() {
+            const a11 = parseFloat(document.getElementById('a11').value) || 0;
+            const a12 = parseFloat(document.getElementById('a12').value) || 0;
+            const a21 = parseFloat(document.getElementById('a21').value) || 0;
+            const a22 = parseFloat(document.getElementById('a22').value) || 0;
+
+            const b11 = parseFloat(document.getElementById('b11').value) || 0;
+            const b12 = parseFloat(document.getElementById('b12').value) || 0;
+            const b21 = parseFloat(document.getElementById('b21').value) || 0;
+            const b22 = parseFloat(document.getElementById('b22').value) || 0;
+
+            const op = document.getElementById('addsub-op').value;
+            const isAdd = op === 'add';
+
+            document.getElementById('addsub-sign-display').innerText = isAdd ? '+' : '-';
+
+            const c11 = isAdd ? a11 + b11 : a11 - b11;
+            const c12 = isAdd ? a12 + b12 : a12 - b12;
+            const c21 = isAdd ? a21 + b21 : a21 - b21;
+            const c22 = isAdd ? a22 + b22 : a22 - b22;
+
+            const sign = isAdd ? '+' : '-';
+
+            const stepsContainer = document.getElementById('addsub-steps');
+            const expr = `\\begin{pmatrix} (${a11} ${sign} ${b11}) & (${a12} ${sign} ${b12}) \\\\ (${a21} ${sign} ${b21}) & (${a22} ${sign} ${b22}) \\end{pmatrix} = \\begin{pmatrix} \\mathbf{${c11}} & \\mathbf{${c12}} \\\\ \\mathbf{${c21}} & \\mathbf{${c22}} \\end{pmatrix}`;
+
+            try {
+                katex.render(expr, stepsContainer, { displayMode: true, throwOnError: false });
+            } catch(e) {
+                stepsContainer.innerText = expr;
+            }
+        }
+
+        // 2. Simulator Perkalian Skalar
+        function calculateScalar() {
+            const k = parseFloat(document.getElementById('scalar-k').value) || 0;
+            document.getElementById('scalar-val-display').innerText = k;
+            document.getElementById('scalar-k-show').innerText = k;
+
+            const sa11 = parseFloat(document.getElementById('sa11').value) || 0;
+            const sa12 = parseFloat(document.getElementById('sa12').value) || 0;
+            const sa21 = parseFloat(document.getElementById('sa21').value) || 0;
+            const sa22 = parseFloat(document.getElementById('sa22').value) || 0;
+
+            const r11 = k * sa11;
+            const r12 = k * sa12;
+            const r21 = k * sa21;
+            const r22 = k * sa22;
+
+            const resGrid = document.getElementById('scalar-result-grid');
+            resGrid.innerHTML = `
+                <div class="p-2 bg-white rounded-lg shadow-sm">${r11}</div>
+                <div class="p-2 bg-white rounded-lg shadow-sm">${r12}</div>
+                <div class="p-2 bg-white rounded-lg shadow-sm">${r21}</div>
+                <div class="p-2 bg-white rounded-lg shadow-sm">${r22}</div>
+            `;
+        }
+
+        // 3. Simulator Perkalian Matriks
+        function calculateMatrixMul() {
+            const ma11 = parseFloat(document.getElementById('ma11').value) || 0;
+            const ma12 = parseFloat(document.getElementById('ma12').value) || 0;
+            const ma21 = parseFloat(document.getElementById('ma21').value) || 0;
+            const ma22 = parseFloat(document.getElementById('ma22').value) || 0;
+
+            const mb11 = parseFloat(document.getElementById('mb11').value) || 0;
+            const mb12 = parseFloat(document.getElementById('mb12').value) || 0;
+            const mb21 = parseFloat(document.getElementById('mb21').value) || 0;
+            const mb22 = parseFloat(document.getElementById('mb22').value) || 0;
+
+            const r11 = (ma11 * mb11) + (ma12 * mb21);
+            const r12 = (ma11 * mb12) + (ma12 * mb22);
+            const r21 = (ma21 * mb11) + (ma22 * mb21);
+            const r22 = (ma21 * mb12) + (ma22 * mb22);
+
+            const stepsContainer = document.getElementById('matrix-mul-steps');
+            const expr = `\\begin{pmatrix} (${ma11} \\cdot ${mb11} + ${ma12} \\cdot ${mb21}) & (${ma11} \\cdot ${mb12} + ${ma12} \\cdot ${mb22}) \\\\ (${ma21} \\cdot ${mb11} + ${ma22} \\cdot ${mb21}) & (${ma21} \\cdot ${mb12} + ${ma22} \\cdot ${mb22}) \\end{pmatrix} = \\begin{pmatrix} \\mathbf{${r11}} & \\mathbf{${r12}} \\\\ \\mathbf{${r21}} & \\mathbf{${r22}} \\end{pmatrix}`;
+
+            try {
+                katex.render(expr, stepsContainer, { displayMode: true, throwOnError: false });
+            } catch(e) {
+                stepsContainer.innerText = expr;
+            }
+        }
+
+        // ==================== MINI GAMES LOGIC ====================
+
+        function switchGame(gameNum) {
+            document.getElementById('game-container-1').classList.add('hidden');
+            document.getElementById('game-container-2').classList.add('hidden');
+            document.getElementById('game-container-3').classList.add('hidden');
+
+            document.getElementById('game-container-' + gameNum).classList.remove('hidden');
+
+            for (let i = 1; i <= 3; i++) {
+                const btn = document.getElementById('btn-game-' + i);
+                if (i === gameNum) {
+                    btn.className = "px-4 py-2.5 rounded-2xl font-heading font-bold text-sm bg-white text-orange-600 shadow-md";
+                } else {
+                    btn.className = "px-4 py-2.5 rounded-2xl font-heading font-bold text-sm bg-orange-600 text-white hover:bg-orange-700";
+                }
+            }
+        }
+
+        // --- GIM 1: ORDO MATCHER ---
+        function initG1() {
+            const q = g1Questions[Math.floor(Math.random() * g1Questions.length)];
+            g1CurrentMatrix = q;
+
+            const disp = document.getElementById('g1-matrix-display');
+            katex.render(q.matrix, disp, { displayMode: true, throwOnError: false });
+
+            const optDiv = document.getElementById('g1-options');
+            optDiv.innerHTML = '';
+            document.getElementById('g1-feedback').innerText = '';
+
+            // Shuffle options
+            const shuffledOpts = [...q.options].sort(() => Math.random() - 0.5);
+
+            shuffledOpts.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = "py-3 px-4 bg-slate-700 hover:bg-orange-500 text-white font-heading font-bold rounded-xl transition-all shadow-md";
+                btn.innerText = opt;
+                btn.onclick = () => checkG1Answer(opt);
+                optDiv.appendChild(btn);
+            });
+        }
+
+        function checkG1Answer(selected) {
+            const feedback = document.getElementById('g1-feedback');
+            if (selected === g1CurrentMatrix.answer) {
+                g1Score += 10;
+                document.getElementById('g1-score').innerText = g1Score;
+                feedback.className = "text-lg font-bold font-heading h-8 text-green-400";
+                feedback.innerText = "✨ Tepat Sekali! +10 Poin";
+                confetti({ particleCount: 30, spread: 60, origin: { y: 0.7 } });
+                setTimeout(initG1, 1200);
+            } else {
+                feedback.className = "text-lg font-bold font-heading h-8 text-red-400";
+                feedback.innerText = "❌ Ups, Kurang Tepat! Coba lagi.";
+            }
+        }
+
+        // --- GIM 2: SCALAR BLASTER ---
+        function startG2() {
+            g2Score = 0;
+            g2Timer = 30;
+            document.getElementById('g2-score').innerText = g2Score;
+            document.getElementById('g2-timer').innerText = g2Timer;
+
+            document.getElementById('g2-start-btn').classList.add('hidden');
+            document.getElementById('g2-play-area').classList.remove('hidden');
+
+            generateG2Question();
+
+            clearInterval(g2Interval);
+            g2Interval = setInterval(() => {
+                g2Timer--;
+                document.getElementById('g2-timer').innerText = g2Timer;
+                if (g2Timer <= 0) {
+                    clearInterval(g2Interval);
+                    endG2();
+                }
+            }, 1000);
+        }
+
+        function generateG2Question() {
+            const k = Math.floor(Math.random() * 5) + 2; // 2 to 6
+            const elem = Math.floor(Math.random() * 9) + 1; // 1 to 9
+            const correct = k * elem;
+
+            g2CurrentQuestion = { k, elem, correct };
+
+            const textDiv = document.getElementById('g2-question-text');
+            textDiv.innerText = `Berapakah nilai: ${k} × [ ${elem} ] ?`;
+
+            // generate options
+            const opts = [correct, correct + k, correct - 2, correct + 3].sort(() => Math.random() - 0.5);
+
+            const optDiv = document.getElementById('g2-options');
+            optDiv.innerHTML = '';
+            document.getElementById('g2-feedback').innerText = '';
+
+            opts.forEach(val => {
+                const btn = document.createElement('button');
+                btn.className = "py-3 px-4 bg-purple-800 hover:bg-purple-600 text-white font-heading font-bold text-xl rounded-xl transition-all shadow-md";
+                btn.innerText = val;
+                btn.onclick = () => checkG2Answer(val);
+                optDiv.appendChild(btn);
+            });
+        }
+
+        function checkG2Answer(val) {
+            if (val === g2CurrentQuestion.correct) {
+                g2Score += 10;
+                document.getElementById('g2-score').innerText = g2Score;
+                document.getElementById('g2-feedback').innerText = "⚡ Mantap! +10 Poin";
+                generateG2Question();
+            } else {
+                document.getElementById('g2-feedback').innerText = "❌ Kurang Tepat!";
+            }
+        }
+
+        function endG2() {
+            document.getElementById('g2-play-area').classList.add('hidden');
+            document.getElementById('g2-start-btn').classList.remove('hidden');
+            document.getElementById('g2-start-btn').innerText = "MAIN LAGI (GIM 2)";
+            document.getElementById('g2-feedback').innerText = `🏆 Waktu Habis! Skor Akhir Kamu: ${g2Score}`;
+            confetti({ particleCount: 70, spread: 80, origin: { y: 0.6 } });
+        }
+
+        // --- GIM 3: CELL MATRIX PUZZLE ---
+        function initG3() {
+            const a = Math.floor(Math.random() * 8) + 1;
+            const b = Math.floor(Math.random() * 8) + 1;
+            const target = a + b;
+
+            g3CurrentQuestion = { a, b, target };
+
+            const disp = document.getElementById('g3-puzzle-display');
+            disp.innerHTML = `
+                <div>\\begin{pmatrix} ${a} \\end{pmatrix} + \\begin{pmatrix} ${b} \\end{pmatrix} = \\begin{pmatrix} \\mathbf{?} \\end{pmatrix}</div>
+            `;
+            katex.render(`\\begin{pmatrix} ${a} \\end{pmatrix} + \\begin{pmatrix} ${b} \\end{pmatrix} = \\begin{pmatrix} \\mathbf{?} \\end{pmatrix}`, disp, { displayMode: true, throwOnError: false });
+
+            // Options
+            const opts = [target, target + 1, target - 2, target + 3].sort(() => Math.random() - 0.5);
+            const optDiv = document.getElementById('g3-number-options');
+            optDiv.innerHTML = '';
+            document.getElementById('g3-feedback').innerText = '';
+
+            opts.forEach(num => {
+                const btn = document.createElement('button');
+                btn.className = "w-14 h-14 bg-blue-600 hover:bg-yellow-400 hover:text-slate-900 text-white font-heading font-black text-2xl rounded-2xl transition-all shadow-md flex items-center justify-center";
+                btn.innerText = num;
+                btn.onclick = () => checkG3Answer(num);
+                optDiv.appendChild(btn);
+            });
+        }
+
+        function checkG3Answer(selected) {
+            const feedback = document.getElementById('g3-feedback');
+            if (selected === g3CurrentQuestion.target) {
+                g3Score += 10;
+                document.getElementById('g3-score').innerText = g3Score;
+                feedback.innerText = "🎯 Hebat! Isi Sel Terjawab!";
+                confetti({ particleCount: 30, spread: 60, origin: { y: 0.7 } });
+                setTimeout(initG3, 1200);
+            } else {
+                feedback.innerText = "❌ Coba hitung lagi!";
+            }
+        }
+
+        // ==================== QUIZ LOGIC ====================
+
+        function renderQuizQuestions() {
+            const container = document.getElementById('quiz-questions-container');
+            container.innerHTML = '';
+
+            quizData.forEach((q, idx) => {
+                const card = document.createElement('div');
+                card.className = "bg-white rounded-3xl p-6 sm:p-8 border-4 border-slate-200 shadow-pixar-sm space-y-4";
+
+                let optionsHTML = '';
+                q.options.forEach((opt, optIdx) => {
+                    optionsHTML += `
+                        <label class="flex items-center gap-3 p-4 bg-slate-50 hover:bg-blue-50 rounded-2xl border-2 border-slate-200 hover:border-blue-300 cursor-pointer transition-all">
+                            <input type="radio" name="q_${q.id}" value="${optIdx}" class="w-5 h-5 text-pixar-blue focus:ring-pixar-blue">
+                            <span class="font-medium text-slate-800 text-sm sm:text-base katex-render" data-expr="${opt}">${opt}</span>
+                        </label>
+                    `;
+                });
+
+                card.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <span class="w-10 h-10 rounded-xl bg-pixar-blue text-white font-heading font-bold flex items-center justify-center text-lg">${idx + 1}</span>
+                        <h4 class="text-lg font-bold font-heading text-slate-800">Soal Nomor ${idx + 1}</h4>
+                    </div>
+                    <p class="text-slate-700 font-medium leading-relaxed text-sm sm:text-base katex-render" data-expr="${q.question}">${q.question}</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                        ${optionsHTML}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+
+            renderMathInTab('quiz');
+        }
+
+        function submitQuiz() {
+            let correctCount = 0;
+            const expContainer = document.getElementById('quiz-explanations-container');
+            expContainer.innerHTML = '';
+
+            quizData.forEach((q, idx) => {
+                const selected = document.querySelector(`input[name="q_${q.id}"]:checked`);
+                const userAns = selected ? parseInt(selected.value) : -1;
+
+                const isCorrect = userAns === q.correct;
+                if (isCorrect) correctCount++;
+
+                // Build explanation card
+                const expCard = document.createElement('div');
+                expCard.className = `p-5 rounded-2xl border-2 space-y-2 ${isCorrect ? 'bg-green-50 border-green-300' : 'bg-red-50 border-red-300'}`;
+
+                expCard.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <span class="font-heading font-bold text-slate-800">Soal #${idx + 1}</span>
+                        <span class="px-3 py-1 rounded-full text-xs font-bold ${isCorrect ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}">
+                            ${isCorrect ? '✓ Benar (+20)' : '✗ Salah'}
+                        </span>
+                    </div>
+                    <div class="text-xs sm:text-sm text-slate-700 leading-relaxed pt-2 border-t border-slate-200/60">
+                        <strong>Pembahasan:</strong> <br> ${q.explanation}
+                    </div>
+                `;
+                expContainer.appendChild(expCard);
+            });
+
+            const finalScore = (correctCount / quizData.length) * 100;
+
+            document.getElementById('quiz-form-wrapper').classList.add('hidden');
+            document.getElementById('quiz-result-card').classList.remove('hidden');
+
+            document.getElementById('quiz-score-num').innerText = `${finalScore} / 100`;
+
+            const msg = document.getElementById('quiz-feedback-msg');
+            if (finalScore >= 80) {
+                msg.innerText = "🎉 Luar Biasa, Champ! Kamu sudah sangat menguasai Operasi Matriks!";
+                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+            } else {
+                msg.innerText = "💪 Tetap Semangat! Pelajari kembali materi dan coba kuis lagi ya!";
+            }
+
+            renderMathInTab('quiz');
+        }
+
+        function resetQuiz() {
+            document.getElementById('quiz-result-card').classList.add('hidden');
+            document.getElementById('quiz-form-wrapper').classList.remove('hidden');
+            renderQuizQuestions();
+        }
+    </script>
+</body>
+</html>
